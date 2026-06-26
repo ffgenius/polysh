@@ -120,7 +120,8 @@ fn translate_ps_to_unix(cmd: &str, flags: &[String], args: &[String]) -> Option<
             }
         }
         "Get-ChildItem" if args.contains(&"-Recurse".to_string()) => {
-            let non_flag_args: Vec<&str> = args.iter()
+            let non_flag_args: Vec<&str> = args
+                .iter()
                 .filter(|a| !a.starts_with('-'))
                 .map(|s| s.as_str())
                 .collect();
@@ -180,7 +181,8 @@ fn translate_cmd_to_unix(cmd: &str, flags: &[String], args: &[String]) -> Option
         "icacls" => translate_icacls_cmd_to_unix(flags, args),
         "mklink" => translate_mklink_cmd_to_unix(flags, args),
         "runas" => {
-            let sub: Vec<&str> = args.iter()
+            let sub: Vec<&str> = args
+                .iter()
                 .filter(|a| !a.starts_with("/user") && !a.starts_with("/u"))
                 .map(|s| s.as_str())
                 .collect();
@@ -204,7 +206,9 @@ fn translate_unix_to_cmd(cmd: &str, flags: &[String], args: &[String]) -> Option
         "chown" => translate_chown_unix_to_cmd(args),
         "ln" => translate_ln_unix_to_cmd(flags, args),
         "sudo" => {
-            if args.is_empty() { return None; }
+            if args.is_empty() {
+                return None;
+            }
             Some(format!("runas /user:Administrator \"{}\"", args.join(" ")))
         }
         _ => None,
@@ -259,11 +263,15 @@ fn translate_cmd_to_ps(cmd: &str, flags: &[String], args: &[String]) -> Option<S
         "icacls" => translate_icacls_cmd_to_ps(flags, args),
         "mklink" => translate_mklink_cmd_to_ps(flags, args),
         "runas" => {
-            let sub: Vec<&str> = args.iter()
+            let sub: Vec<&str> = args
+                .iter()
                 .filter(|a| !a.starts_with("/user") && !a.starts_with("/u"))
                 .map(|s| s.as_str())
                 .collect();
-            Some(format!("Start-Process -Verb RunAs -ArgumentList '{}'", sub.join(" ")))
+            Some(format!(
+                "Start-Process -Verb RunAs -ArgumentList '{}'",
+                sub.join(" ")
+            ))
         }
         "tasklist" => Some("Get-Process".to_string()),
         "taskkill" => translate_taskkill_cmd_to_ps(flags, args),
@@ -387,7 +395,9 @@ fn translate_cut_unix_to_ps(flags: &[String], _args: &[String]) -> Option<String
     while i < flags.len() {
         match flags[i].as_str() {
             "-d" if i + 1 < flags.len() => {
-                delim = flags[i + 1].trim_matches(|c| c == '\'' || c == '"').to_string();
+                delim = flags[i + 1]
+                    .trim_matches(|c| c == '\'' || c == '"')
+                    .to_string();
                 i += 2;
                 continue;
             }
@@ -450,7 +460,8 @@ fn translate_head_tail_unix_to_ps(cmd: &str, flags: &[String], args: &[String]) 
     let target_args: Vec<&str> = args.iter().map(|s| s.as_str()).collect();
     Some(format!(
         "Select-Object {} {} {}",
-        flag_name, count,
+        flag_name,
+        count,
         target_args.join(" ")
     ))
 }
@@ -469,7 +480,9 @@ fn translate_wc_unix_to_ps(flags: &[String], args: &[String]) -> Option<String> 
 }
 
 fn translate_systemctl_unix_to_ps(args: &[String]) -> Option<String> {
-    if args.is_empty() { return None; }
+    if args.is_empty() {
+        return None;
+    }
     let action = &args[0];
     let service = args.get(1).map(|s| s.as_str()).unwrap_or("");
     match action.as_str() {
@@ -477,8 +490,14 @@ fn translate_systemctl_unix_to_ps(args: &[String]) -> Option<String> {
         "stop" => Some(format!("Stop-Service {}", service)),
         "restart" => Some(format!("Restart-Service {}", service)),
         "status" => Some(format!("Get-Service {}", service)),
-        "enable" => Some(format!("Set-Service -Name {} -StartupType Automatic", service)),
-        "disable" => Some(format!("Set-Service -Name {} -StartupType Disabled", service)),
+        "enable" => Some(format!(
+            "Set-Service -Name {} -StartupType Automatic",
+            service
+        )),
+        "disable" => Some(format!(
+            "Set-Service -Name {} -StartupType Disabled",
+            service
+        )),
         "reload" => Some(format!("Restart-Service {}", service)),
         _ => None,
     }
@@ -487,16 +506,29 @@ fn translate_systemctl_unix_to_ps(args: &[String]) -> Option<String> {
 fn translate_chmod_unix_to_ps(_flags: &[String], args: &[String]) -> Option<String> {
     let mode = args.first()?;
     if mode.len() == 3 || mode.len() == 4 {
-        let mode = if mode.len() == 4 { &mode[1..] } else { mode.as_str() };
+        let mode = if mode.len() == 4 {
+            &mode[1..]
+        } else {
+            mode.as_str()
+        };
         if mode.chars().all(|c| c.is_ascii_digit()) {
             let owner = mode.chars().next()?;
             let perm = match owner {
-                '7' => "F", '6' => "M", '5' => "M",
-                '4' => "R", '3' => "W", '2' => "W", '1' => "X",
+                '7' => "F",
+                '6' => "M",
+                '5' => "M",
+                '4' => "R",
+                '3' => "W",
+                '2' => "W",
+                '1' => "X",
                 _ => "R",
             };
             let rest = &args[1..];
-            return Some(format!("icacls {} /grant Everyone:{}", rest.join(" "), perm));
+            return Some(format!(
+                "icacls {} /grant Everyone:{}",
+                rest.join(" "),
+                perm
+            ));
         }
     }
     None
@@ -512,19 +544,31 @@ fn translate_ln_unix_to_ps(flags: &[String], args: &[String]) -> Option<String> 
     if flags.contains(&"-s".to_string()) {
         let target = args.first()?;
         let name = args.get(1)?;
-        Some(format!("New-Item -ItemType SymbolicLink -Target {} -Name {}", target, name))
+        Some(format!(
+            "New-Item -ItemType SymbolicLink -Target {} -Name {}",
+            target, name
+        ))
     } else {
         let target = args.first()?;
         let name = args.get(1)?;
-        Some(format!("New-Item -ItemType HardLink -Target {} -Name {}", target, name))
+        Some(format!(
+            "New-Item -ItemType HardLink -Target {} -Name {}",
+            target, name
+        ))
     }
 }
 
 fn translate_xargs_unix_to_ps(_flags: &[String], args: &[String]) -> Option<String> {
-    if args.is_empty() { return None; }
+    if args.is_empty() {
+        return None;
+    }
     let sub_cmd = &args[0];
     let sub_args: Vec<&str> = args[1..].iter().map(|s| s.as_str()).collect();
-    Some(format!("ForEach-Object {{ {} {} $_ }}", sub_cmd, sub_args.join(" ")))
+    Some(format!(
+        "ForEach-Object {{ {} {} $_ }}",
+        sub_cmd,
+        sub_args.join(" ")
+    ))
 }
 
 fn translate_sleep_unix_to_ps(args: &[String]) -> Option<String> {
@@ -568,7 +612,10 @@ fn translate_less_unix_to_ps(flags: &[String], args: &[String]) -> Option<String
 
 fn translate_rmdir_unix_to_ps(flags: &[String], args: &[String]) -> Option<String> {
     if flags.contains(&"-p".to_string()) {
-        Some(format!("Remove-Item -Directory -Recurse {}", args.join(" ")))
+        Some(format!(
+            "Remove-Item -Directory -Recurse {}",
+            args.join(" ")
+        ))
     } else {
         Some(format!("Remove-Item -Directory {}", args.join(" ")))
     }
@@ -585,19 +632,33 @@ fn translate_netstat_unix_to_ps(flags: &[String]) -> Option<String> {
 }
 
 fn translate_gzip_unix_to_ps(_flags: &[String], args: &[String]) -> Option<String> {
-    if args.is_empty() { return None; }
-    Some(format!("Compress-Archive -Path {} -DestinationPath {}.zip", args.join(" "), args[0]))
+    if args.is_empty() {
+        return None;
+    }
+    Some(format!(
+        "Compress-Archive -Path {} -DestinationPath {}.zip",
+        args.join(" "),
+        args[0]
+    ))
 }
 
 fn translate_gunzip_unix_to_ps(_flags: &[String], args: &[String]) -> Option<String> {
-    if args.is_empty() { return None; }
-    Some(format!("Expand-Archive -Path {} -DestinationPath .", args.join(" ")))
+    if args.is_empty() {
+        return None;
+    }
+    Some(format!(
+        "Expand-Archive -Path {} -DestinationPath .",
+        args.join(" ")
+    ))
 }
 
 fn translate_dig_unix_to_ps(flags: &[String], args: &[String]) -> Option<String> {
     let target = args.first()?;
     if flags.contains(&"+short".to_string()) {
-        Some(format!("Resolve-DnsName {} -Type A | Select-Object -ExpandProperty IPAddress", target))
+        Some(format!(
+            "Resolve-DnsName {} -Type A | Select-Object -ExpandProperty IPAddress",
+            target
+        ))
     } else if flags.contains(&"+trace".to_string()) {
         Some(format!("Resolve-DnsName {} -Type NS", target))
     } else if flags.contains(&"-x".to_string()) {
@@ -608,16 +669,24 @@ fn translate_dig_unix_to_ps(flags: &[String], args: &[String]) -> Option<String>
 }
 
 fn translate_sudo_unix_to_ps(args: &[String]) -> Option<String> {
-    if args.is_empty() { return None; }
+    if args.is_empty() {
+        return None;
+    }
     let sub_cmd = args.join(" ");
-    Some(format!(r#"Start-Process powershell -Verb RunAs -ArgumentList "-Command", "{}""#, sub_cmd))
+    Some(format!(
+        r#"Start-Process powershell -Verb RunAs -ArgumentList "-Command", "{}""#,
+        sub_cmd
+    ))
 }
 
 fn translate_nl_unix_to_ps(args: &[String]) -> Option<String> {
     if args.is_empty() {
         Some(r#"Get-Content | ForEach-Object { $i++; "$i`t$_" }"#.to_string())
     } else {
-        Some(format!(r#"Get-Content {} | ForEach-Object {{ $i++; "$i`t$_" }}"#, args.join(" ")))
+        Some(format!(
+            r#"Get-Content {} | ForEach-Object {{ $i++; "$i`t$_" }}"#,
+            args.join(" ")
+        ))
     }
 }
 
@@ -629,22 +698,21 @@ fn translate_new_item_ps_to_unix(flags: &[String], args: &[String]) -> Option<St
     let item_type = parse_ps_named_param(flags, "-ItemType");
     match item_type.as_deref() {
         Some("File") => {
-            if args.is_empty() { None }
-            else { Some(format!("touch {}", args.join(" "))) }
+            if args.is_empty() {
+                None
+            } else {
+                Some(format!("touch {}", args.join(" ")))
+            }
         }
-        Some("Directory") => {
-            Some(format!("mkdir {}", args.join(" ")))
-        }
+        Some("Directory") => Some(format!("mkdir {}", args.join(" "))),
         Some("SymbolicLink") => {
             let target = parse_ps_named_param(flags, "-Target")?;
-            let name = parse_ps_named_param(flags, "-Name")
-                .or_else(|| args.first().cloned())?;
+            let name = parse_ps_named_param(flags, "-Name").or_else(|| args.first().cloned())?;
             Some(format!("ln -s {} {}", target, name))
         }
         Some("HardLink") => {
             let target = parse_ps_named_param(flags, "-Target")?;
-            let name = parse_ps_named_param(flags, "-Name")
-                .or_else(|| args.first().cloned())?;
+            let name = parse_ps_named_param(flags, "-Name").or_else(|| args.first().cloned())?;
             Some(format!("ln {} {}", target, name))
         }
         _ => None,
@@ -655,7 +723,8 @@ fn translate_get_content_ps_to_unix(flags: &[String], args: &[String]) -> Option
     // Get-Content -Tail N → tail -n N
     if let Some(tail_val) = parse_ps_named_param(flags, "-Tail") {
         if let Ok(n) = tail_val.parse::<usize>() {
-            let rest_args: Vec<&str> = args.iter()
+            let rest_args: Vec<&str> = args
+                .iter()
                 .filter(|a| !a.starts_with('-'))
                 .map(|s| s.as_str())
                 .collect();
@@ -690,7 +759,8 @@ fn translate_foreach_ps_to_unix(args: &[String]) -> Option<String> {
                 let rest_args = &args[1..];
                 return Some(format!(
                     "cut -d'{}' -f{} {}",
-                    delim, field,
+                    delim,
+                    field,
                     rest_args.join(" ")
                 ));
             }
@@ -713,19 +783,20 @@ fn translate_foreach_ps_to_unix(args: &[String]) -> Option<String> {
 fn translate_icacls_ps_to_unix(flags: &[String], args: &[String]) -> Option<String> {
     // icacls file /grant Everyone:F → chmod 777 file
     // Look for /grant in flags (CMD-style reclassified) or args
-    let has_grant = flags.iter().any(|f| f == "/grant")
-        || args.iter().any(|a| a == "/grant");
-    let has_setowner = flags.iter().any(|f| f == "/setowner")
-        || args.iter().any(|a| a == "/setowner");
+    let has_grant = flags.iter().any(|f| f == "/grant") || args.iter().any(|a| a == "/grant");
+    let has_setowner =
+        flags.iter().any(|f| f == "/setowner") || args.iter().any(|a| a == "/setowner");
 
     if has_grant {
         // Find the file (first non-flag arg before /grant)
-        let file = args.iter()
+        let file = args
+            .iter()
             .find(|a| !a.starts_with('/') && !a.starts_with('-') && *a != "/grant")
             .cloned()
             .unwrap_or_default();
         // Find the permission string (after /grant, e.g. Everyone:F)
-        let perm_str = args.iter()
+        let perm_str = args
+            .iter()
             .find(|a| a.contains(':'))
             .map(|a| {
                 let parts: Vec<&str> = a.split(':').collect();
@@ -735,11 +806,13 @@ fn translate_icacls_ps_to_unix(flags: &[String], args: &[String]) -> Option<Stri
         let octal = icacls_perm_to_octal(&format!("{}{}{}", perm_str, perm_str, perm_str));
         Some(format!("chmod {} {}", octal, file))
     } else if has_setowner {
-        let file = args.iter()
+        let file = args
+            .iter()
             .find(|a| !a.starts_with('/') && !a.starts_with('-') && *a != "/setowner")
             .cloned()
             .unwrap_or_default();
-        let owner = args.iter()
+        let owner = args
+            .iter()
             .find(|a| *a != &file && !a.starts_with('/') && *a != "/setowner")
             .cloned()
             .unwrap_or_default();
@@ -754,7 +827,9 @@ fn translate_icacls_ps_to_unix(flags: &[String], args: &[String]) -> Option<Stri
 // ============================================================================
 
 fn translate_sc_cmd_to_unix(args: &[String]) -> Option<String> {
-    if args.is_empty() { return None; }
+    if args.is_empty() {
+        return None;
+    }
     let action = &args[0];
     let service = args.get(1).map(|s| s.as_str()).unwrap_or("");
     match action.as_str() {
@@ -773,11 +848,14 @@ fn translate_mklink_cmd_to_unix(flags: &[String], args: &[String]) -> Option<Str
     // mklink /D link target → ln -s target link  (args reversed!)
     // mklink link target → ln target link        (hard link)
     let is_dir = flags.iter().any(|f| f == "/D" || f == "/d");
-    let non_flag: Vec<&str> = args.iter()
+    let non_flag: Vec<&str> = args
+        .iter()
         .filter(|a| !a.starts_with('/'))
         .map(|s| s.as_str())
         .collect();
-    if non_flag.len() < 2 { return None; }
+    if non_flag.len() < 2 {
+        return None;
+    }
     let link_name = non_flag[0];
     let target = non_flag[1];
     if is_dir {
@@ -813,7 +891,9 @@ fn translate_taskkill_cmd_to_unix(flags: &[String], args: &[String]) -> Option<S
 // ============================================================================
 
 fn translate_systemctl_unix_to_cmd(args: &[String]) -> Option<String> {
-    if args.is_empty() { return None; }
+    if args.is_empty() {
+        return None;
+    }
     let action = &args[0];
     let service = args.get(1).map(|s| s.as_str()).unwrap_or("");
     match action.as_str() {
@@ -829,16 +909,29 @@ fn translate_systemctl_unix_to_cmd(args: &[String]) -> Option<String> {
 fn translate_chmod_unix_to_cmd(args: &[String]) -> Option<String> {
     let mode = args.first()?;
     if mode.len() == 3 || mode.len() == 4 {
-        let mode = if mode.len() == 4 { &mode[1..] } else { mode.as_str() };
+        let mode = if mode.len() == 4 {
+            &mode[1..]
+        } else {
+            mode.as_str()
+        };
         if mode.chars().all(|c| c.is_ascii_digit()) {
             let owner = mode.chars().next()?;
             let perm = match owner {
-                '7' => "F", '6' => "M", '5' => "M",
-                '4' => "R", '3' => "W", '2' => "W", '1' => "X",
+                '7' => "F",
+                '6' => "M",
+                '5' => "M",
+                '4' => "R",
+                '3' => "W",
+                '2' => "W",
+                '1' => "X",
                 _ => "R",
             };
             let rest = &args[1..];
-            return Some(format!("icacls {} /grant Everyone:{}", rest.join(" "), perm));
+            return Some(format!(
+                "icacls {} /grant Everyone:{}",
+                rest.join(" "),
+                perm
+            ));
         }
     }
     None
@@ -852,7 +945,9 @@ fn translate_chown_unix_to_cmd(args: &[String]) -> Option<String> {
 
 fn translate_ln_unix_to_cmd(flags: &[String], args: &[String]) -> Option<String> {
     // ln -s target link → mklink /D link target  (args reversed!)
-    if args.len() < 2 { return None; }
+    if args.len() < 2 {
+        return None;
+    }
     let target = &args[0];
     let link_name = &args[1];
     if flags.contains(&"-s".to_string()) {
@@ -870,22 +965,21 @@ fn translate_new_item_ps_to_cmd(flags: &[String], args: &[String]) -> Option<Str
     let item_type = parse_ps_named_param(flags, "-ItemType");
     match item_type.as_deref() {
         Some("File") => {
-            if args.is_empty() { None }
-            else { Some(format!("type nul > {}", args.join(" "))) }
+            if args.is_empty() {
+                None
+            } else {
+                Some(format!("type nul > {}", args.join(" ")))
+            }
         }
-        Some("Directory") => {
-            Some(format!("md {}", args.join(" ")))
-        }
+        Some("Directory") => Some(format!("md {}", args.join(" "))),
         Some("SymbolicLink") => {
             let target = parse_ps_named_param(flags, "-Target")?;
-            let name = parse_ps_named_param(flags, "-Name")
-                .or_else(|| args.first().cloned())?;
+            let name = parse_ps_named_param(flags, "-Name").or_else(|| args.first().cloned())?;
             Some(format!("mklink /D {} {}", name, target))
         }
         Some("HardLink") => {
             let target = parse_ps_named_param(flags, "-Target")?;
-            let name = parse_ps_named_param(flags, "-Name")
-                .or_else(|| args.first().cloned())?;
+            let name = parse_ps_named_param(flags, "-Name").or_else(|| args.first().cloned())?;
             Some(format!("mklink {} {}", name, target))
         }
         _ => None,
@@ -897,7 +991,9 @@ fn translate_new_item_ps_to_cmd(flags: &[String], args: &[String]) -> Option<Str
 // ============================================================================
 
 fn translate_sc_cmd_to_ps(args: &[String]) -> Option<String> {
-    if args.is_empty() { return None; }
+    if args.is_empty() {
+        return None;
+    }
     let action = &args[0];
     let service = args.get(1).map(|s| s.as_str()).unwrap_or("");
     match action.as_str() {
@@ -911,14 +1007,15 @@ fn translate_sc_cmd_to_ps(args: &[String]) -> Option<String> {
 fn translate_icacls_cmd_to_ps(flags: &[String], args: &[String]) -> Option<String> {
     // icacls /grant → approximate with Set-Acl or just pass through to PS icacls
     // Since icacls also exists in PS, return the original as a valid PS command
-    let has_grant = flags.iter().any(|f| f == "/grant")
-        || args.iter().any(|a| a == "/grant");
+    let has_grant = flags.iter().any(|f| f == "/grant") || args.iter().any(|a| a == "/grant");
     if has_grant {
-        let file = args.iter()
+        let file = args
+            .iter()
             .find(|a| !a.starts_with('/') && *a != "/grant")
             .cloned()
             .unwrap_or_default();
-        let perm_str = args.iter()
+        let perm_str = args
+            .iter()
             .find(|a| a.contains(':'))
             .map(|a| {
                 let parts: Vec<&str> = a.split(':').collect();
@@ -933,17 +1030,26 @@ fn translate_icacls_cmd_to_ps(flags: &[String], args: &[String]) -> Option<Strin
 
 fn translate_mklink_cmd_to_ps(flags: &[String], args: &[String]) -> Option<String> {
     let is_dir = flags.iter().any(|f| f == "/D" || f == "/d");
-    let non_flag: Vec<&str> = args.iter()
+    let non_flag: Vec<&str> = args
+        .iter()
         .filter(|a| !a.starts_with('/'))
         .map(|s| s.as_str())
         .collect();
-    if non_flag.len() < 2 { return None; }
+    if non_flag.len() < 2 {
+        return None;
+    }
     let link_name = non_flag[0];
     let target = non_flag[1];
     if is_dir {
-        Some(format!("New-Item -ItemType SymbolicLink -Target {} -Name {}", target, link_name))
+        Some(format!(
+            "New-Item -ItemType SymbolicLink -Target {} -Name {}",
+            target, link_name
+        ))
     } else {
-        Some(format!("New-Item -ItemType HardLink -Target {} -Name {}", target, link_name))
+        Some(format!(
+            "New-Item -ItemType HardLink -Target {} -Name {}",
+            target, link_name
+        ))
     }
 }
 

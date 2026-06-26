@@ -3,7 +3,10 @@
 //! Covers: basic tokenization, nested constructs, reconstruction, unicode,
 //! and all inline tests migrated from src/tokenizer.rs.
 
-use polysh::tokenizer::{tokenize_with_pos, tokenize_with_pos_enhanced, tokenize_with_pos_enhanced_and_roles, tag_token_roles, TokenRole};
+use polysh::tokenizer::{
+    tag_token_roles, tokenize_with_pos, tokenize_with_pos_enhanced,
+    tokenize_with_pos_enhanced_and_roles, TokenRole,
+};
 
 // ---------------------------------------------------------------------------
 // Basic tokenization edge cases
@@ -206,7 +209,9 @@ fn braces() {
 #[test]
 fn cmd_sub_basic() {
     let tokens = tokenize_with_pos_enhanced("echo $(ls -la)");
-    let has_dollar_paren = tokens.iter().any(|t| t.reconstructed_value.starts_with("$("));
+    let has_dollar_paren = tokens
+        .iter()
+        .any(|t| t.reconstructed_value.starts_with("$("));
     assert!(has_dollar_paren, "Expected reconstructed $(...) token");
 }
 
@@ -220,21 +225,34 @@ fn cmd_sub_nested() {
 #[test]
 fn proc_sub_basic() {
     let tokens = tokenize_with_pos_enhanced("diff <(ls a) <(ls b)");
-    let has_lt_paren = tokens.iter().any(|t| t.reconstructed_value.starts_with("<("));
+    let has_lt_paren = tokens
+        .iter()
+        .any(|t| t.reconstructed_value.starts_with("<("));
     assert!(has_lt_paren, "Expected reconstructed <(...) token");
 }
 
 #[test]
 fn here_doc_basic() {
     let tokens = tokenize_with_pos_enhanced("cat << EOF");
-    let has_heredoc = tokens.iter().any(|t| t.reconstructed_value.starts_with("<<"));
-    assert!(has_heredoc, "Expected reconstructed << token, got: {:?}", tokens.iter().map(|t| &t.reconstructed_value).collect::<Vec<_>>());
+    let has_heredoc = tokens
+        .iter()
+        .any(|t| t.reconstructed_value.starts_with("<<"));
+    assert!(
+        has_heredoc,
+        "Expected reconstructed << token, got: {:?}",
+        tokens
+            .iter()
+            .map(|t| &t.reconstructed_value)
+            .collect::<Vec<_>>()
+    );
 }
 
 #[test]
 fn env_var_brace() {
     let tokens = tokenize_with_pos_enhanced("echo ${HOME}");
-    let has_env = tokens.iter().any(|t| t.reconstructed_value.starts_with("${"));
+    let has_env = tokens
+        .iter()
+        .any(|t| t.reconstructed_value.starts_with("${"));
     assert!(has_env, "Expected reconstructed ${{...}} token");
 }
 
@@ -256,7 +274,9 @@ fn function_def_parens() {
 fn redirection_fd() {
     let tokens = tokenize_with_pos_enhanced("cmd 2>/dev/null");
     // Should reconstruct 2> as one token
-    let has_redirect = tokens.iter().any(|t| t.reconstructed_value.starts_with("2>"));
+    let has_redirect = tokens
+        .iter()
+        .any(|t| t.reconstructed_value.starts_with("2>"));
     assert!(has_redirect, "Expected reconstructed 2> token");
 }
 
@@ -460,26 +480,30 @@ fn test_role_tagging() {
 fn test_role_tagging_with_connectors() {
     let tokens = tokenize_with_pos("rm -rf dist && echo done");
     let roles = tag_token_roles(&tokens);
-    assert_eq!(roles[0].role, TokenRole::Cmd);  // rm
+    assert_eq!(roles[0].role, TokenRole::Cmd); // rm
     assert_eq!(roles[1].role, TokenRole::Flag); // -rf
-    assert_eq!(roles[2].role, TokenRole::Arg);  // dist
-    assert_eq!(roles[3].role, TokenRole::Op);   // &&
-    assert_eq!(roles[4].role, TokenRole::Cmd);  // echo
-    assert_eq!(roles[5].role, TokenRole::Arg);  // done
+    assert_eq!(roles[2].role, TokenRole::Arg); // dist
+    assert_eq!(roles[3].role, TokenRole::Op); // &&
+    assert_eq!(roles[4].role, TokenRole::Cmd); // echo
+    assert_eq!(roles[5].role, TokenRole::Arg); // done
 }
 
 #[test]
 fn test_cmd_sub_reconstruction() {
     let cmd = "echo $(ls -la)";
     let tokens = tokenize_with_pos_enhanced(cmd);
-    assert!(tokens.iter().any(|t| t.reconstructed_value.starts_with("$(")));
+    assert!(tokens
+        .iter()
+        .any(|t| t.reconstructed_value.starts_with("$(")));
 }
 
 #[test]
 fn test_env_var_reconstruction() {
     let cmd = "echo ${HOME}";
     let tokens = tokenize_with_pos_enhanced(cmd);
-    assert!(tokens.iter().any(|t| t.reconstructed_value.starts_with("${")));
+    assert!(tokens
+        .iter()
+        .any(|t| t.reconstructed_value.starts_with("${")));
 }
 
 #[test]
@@ -508,5 +532,5 @@ fn test_empty_input() {
 fn test_cmd_flag_detection() {
     let tokens = tokenize_with_pos("del /s /q file.txt");
     let roles = tag_token_roles(&tokens);
-    assert_eq!(roles[0].role, TokenRole::Cmd);  // del
+    assert_eq!(roles[0].role, TokenRole::Cmd); // del
 }

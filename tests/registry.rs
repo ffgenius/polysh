@@ -3,8 +3,8 @@
 //! Covers MappingRegistry building, flag lookup, bidirectional translation,
 //! and dynamic command translation.
 
-use polysh::mappings::{Dialect, MappingRegistry};
 use polysh::mappings::dynamic::translate_dynamic;
+use polysh::mappings::{Dialect, MappingRegistry};
 
 // ============================================================================
 // Registry tests (from src/mappings/mod.rs)
@@ -99,13 +99,7 @@ fn test_dynamic_sleep_translation() {
 
 #[test]
 fn test_dynamic_whoami_translation() {
-    let result = translate_dynamic(
-        "whoami",
-        &[],
-        &[],
-        Dialect::Unix,
-        Dialect::PowerShell,
-    );
+    let result = translate_dynamic("whoami", &[], &[], Dialect::Unix, Dialect::PowerShell);
     assert_eq!(result, Some("$env:USERNAME".to_string()));
 }
 
@@ -113,7 +107,11 @@ fn test_dynamic_whoami_translation() {
 fn test_dynamic_find_delete_translation() {
     let result = translate_dynamic(
         "find",
-        &["-name".to_string(), "*.rs".to_string(), "-delete".to_string()],
+        &[
+            "-name".to_string(),
+            "*.rs".to_string(),
+            "-delete".to_string(),
+        ],
         &[".".to_string()],
         Dialect::Unix,
         Dialect::PowerShell,
@@ -171,85 +169,190 @@ fn test_ps_to_unix_fallback() {
 
 #[test]
 fn test_ps_start_service_to_unix() {
-    let r = translate_dynamic("Start-Service", &[], &["nginx".to_string()], Dialect::PowerShell, Dialect::Unix);
+    let r = translate_dynamic(
+        "Start-Service",
+        &[],
+        &["nginx".to_string()],
+        Dialect::PowerShell,
+        Dialect::Unix,
+    );
     assert_eq!(r, Some("systemctl start nginx".to_string()));
 }
 
 #[test]
 fn test_ps_stop_service_to_unix() {
-    let r = translate_dynamic("Stop-Service", &[], &["nginx".to_string()], Dialect::PowerShell, Dialect::Unix);
+    let r = translate_dynamic(
+        "Stop-Service",
+        &[],
+        &["nginx".to_string()],
+        Dialect::PowerShell,
+        Dialect::Unix,
+    );
     assert_eq!(r, Some("systemctl stop nginx".to_string()));
 }
 
 #[test]
 fn test_ps_restart_service_to_unix() {
-    let r = translate_dynamic("Restart-Service", &[], &["nginx".to_string()], Dialect::PowerShell, Dialect::Unix);
+    let r = translate_dynamic(
+        "Restart-Service",
+        &[],
+        &["nginx".to_string()],
+        Dialect::PowerShell,
+        Dialect::Unix,
+    );
     assert_eq!(r, Some("systemctl restart nginx".to_string()));
 }
 
 #[test]
 fn test_ps_get_service_to_unix() {
-    let r = translate_dynamic("Get-Service", &[], &["nginx".to_string()], Dialect::PowerShell, Dialect::Unix);
+    let r = translate_dynamic(
+        "Get-Service",
+        &[],
+        &["nginx".to_string()],
+        Dialect::PowerShell,
+        Dialect::Unix,
+    );
     assert_eq!(r, Some("systemctl status nginx".to_string()));
 }
 
 #[test]
 fn test_ps_set_service_enable_to_unix() {
-    let r = translate_dynamic("Set-Service", &["-Name".to_string(), "nginx".to_string(), "-StartupType".to_string(), "Automatic".to_string()], &[], Dialect::PowerShell, Dialect::Unix);
+    let r = translate_dynamic(
+        "Set-Service",
+        &[
+            "-Name".to_string(),
+            "nginx".to_string(),
+            "-StartupType".to_string(),
+            "Automatic".to_string(),
+        ],
+        &[],
+        Dialect::PowerShell,
+        Dialect::Unix,
+    );
     assert_eq!(r, Some("systemctl enable nginx".to_string()));
 }
 
 #[test]
 fn test_ps_set_service_disable_to_unix() {
-    let r = translate_dynamic("Set-Service", &["-Name".to_string(), "nginx".to_string(), "-StartupType".to_string(), "Disabled".to_string()], &[], Dialect::PowerShell, Dialect::Unix);
+    let r = translate_dynamic(
+        "Set-Service",
+        &[
+            "-Name".to_string(),
+            "nginx".to_string(),
+            "-StartupType".to_string(),
+            "Disabled".to_string(),
+        ],
+        &[],
+        Dialect::PowerShell,
+        Dialect::Unix,
+    );
     assert_eq!(r, Some("systemctl disable nginx".to_string()));
 }
 
 #[test]
 fn test_ps_new_item_file_to_unix() {
-    let r = translate_dynamic("New-Item", &["-ItemType".to_string(), "File".to_string()], &["f.txt".to_string()], Dialect::PowerShell, Dialect::Unix);
+    let r = translate_dynamic(
+        "New-Item",
+        &["-ItemType".to_string(), "File".to_string()],
+        &["f.txt".to_string()],
+        Dialect::PowerShell,
+        Dialect::Unix,
+    );
     assert_eq!(r, Some("touch f.txt".to_string()));
 }
 
 #[test]
 fn test_ps_new_item_dir_to_unix() {
-    let r = translate_dynamic("New-Item", &["-ItemType".to_string(), "Directory".to_string()], &["d".to_string()], Dialect::PowerShell, Dialect::Unix);
+    let r = translate_dynamic(
+        "New-Item",
+        &["-ItemType".to_string(), "Directory".to_string()],
+        &["d".to_string()],
+        Dialect::PowerShell,
+        Dialect::Unix,
+    );
     assert_eq!(r, Some("mkdir d".to_string()));
 }
 
 #[test]
 fn test_ps_new_item_symlink_to_unix() {
-    let r = translate_dynamic("New-Item", &["-ItemType".to_string(), "SymbolicLink".to_string(), "-Target".to_string(), "/etc/hosts".to_string(), "-Name".to_string(), "hosts".to_string()], &[], Dialect::PowerShell, Dialect::Unix);
+    let r = translate_dynamic(
+        "New-Item",
+        &[
+            "-ItemType".to_string(),
+            "SymbolicLink".to_string(),
+            "-Target".to_string(),
+            "/etc/hosts".to_string(),
+            "-Name".to_string(),
+            "hosts".to_string(),
+        ],
+        &[],
+        Dialect::PowerShell,
+        Dialect::Unix,
+    );
     assert_eq!(r, Some("ln -s /etc/hosts hosts".to_string()));
 }
 
 #[test]
 fn test_ps_set_location_to_unix() {
-    let r = translate_dynamic("Set-Location", &[], &["/tmp".to_string()], Dialect::PowerShell, Dialect::Unix);
+    let r = translate_dynamic(
+        "Set-Location",
+        &[],
+        &["/tmp".to_string()],
+        Dialect::PowerShell,
+        Dialect::Unix,
+    );
     assert_eq!(r, Some("cd /tmp".to_string()));
 }
 
 #[test]
 fn test_ps_get_content_tail_to_unix() {
-    let r = translate_dynamic("Get-Content", &["-Tail".to_string(), "10".to_string()], &["f.txt".to_string()], Dialect::PowerShell, Dialect::Unix);
+    let r = translate_dynamic(
+        "Get-Content",
+        &["-Tail".to_string(), "10".to_string()],
+        &["f.txt".to_string()],
+        Dialect::PowerShell,
+        Dialect::Unix,
+    );
     assert!(r.unwrap().contains("tail -n 10"));
 }
 
 #[test]
 fn test_ps_get_content_wait_to_unix() {
-    let r = translate_dynamic("Get-Content", &["-Wait".to_string()], &["f.txt".to_string()], Dialect::PowerShell, Dialect::Unix);
+    let r = translate_dynamic(
+        "Get-Content",
+        &["-Wait".to_string()],
+        &["f.txt".to_string()],
+        Dialect::PowerShell,
+        Dialect::Unix,
+    );
     assert_eq!(r, Some("tail -f f.txt".to_string()));
 }
 
 #[test]
 fn test_ps_stop_process_force_to_unix() {
-    let r = translate_dynamic("Stop-Process", &["-Name".to_string(), "nginx".to_string(), "-Force".to_string()], &[], Dialect::PowerShell, Dialect::Unix);
+    let r = translate_dynamic(
+        "Stop-Process",
+        &[
+            "-Name".to_string(),
+            "nginx".to_string(),
+            "-Force".to_string(),
+        ],
+        &[],
+        Dialect::PowerShell,
+        Dialect::Unix,
+    );
     assert_eq!(r, Some("pkill -9 nginx".to_string()));
 }
 
 #[test]
 fn test_ps_get_item_to_unix() {
-    let r = translate_dynamic("Get-Item", &[], &["f.txt".to_string()], Dialect::PowerShell, Dialect::Unix);
+    let r = translate_dynamic(
+        "Get-Item",
+        &[],
+        &["f.txt".to_string()],
+        Dialect::PowerShell,
+        Dialect::Unix,
+    );
     assert_eq!(r, Some("stat f.txt".to_string()));
 }
 
@@ -259,13 +362,25 @@ fn test_ps_get_item_to_unix() {
 
 #[test]
 fn test_cmd_sc_start_to_unix() {
-    let r = translate_dynamic("sc", &[], &["start".to_string(), "nginx".to_string()], Dialect::Cmd, Dialect::Unix);
+    let r = translate_dynamic(
+        "sc",
+        &[],
+        &["start".to_string(), "nginx".to_string()],
+        Dialect::Cmd,
+        Dialect::Unix,
+    );
     assert_eq!(r, Some("systemctl start nginx".to_string()));
 }
 
 #[test]
 fn test_cmd_sc_query_to_unix() {
-    let r = translate_dynamic("sc", &[], &["query".to_string(), "nginx".to_string()], Dialect::Cmd, Dialect::Unix);
+    let r = translate_dynamic(
+        "sc",
+        &[],
+        &["query".to_string(), "nginx".to_string()],
+        Dialect::Cmd,
+        Dialect::Unix,
+    );
     assert_eq!(r, Some("systemctl status nginx".to_string()));
 }
 
@@ -277,19 +392,37 @@ fn test_cmd_tasklist_to_unix() {
 
 #[test]
 fn test_cmd_taskkill_force_to_unix() {
-    let r = translate_dynamic("taskkill", &["/f".to_string()], &["/im".to_string(), "nginx.exe".to_string()], Dialect::Cmd, Dialect::Unix);
+    let r = translate_dynamic(
+        "taskkill",
+        &["/f".to_string()],
+        &["/im".to_string(), "nginx.exe".to_string()],
+        Dialect::Cmd,
+        Dialect::Unix,
+    );
     assert_eq!(r, Some("pkill -9 nginx.exe".to_string()));
 }
 
 #[test]
 fn test_cmd_mklink_dir_to_unix() {
-    let r = translate_dynamic("mklink", &["/D".to_string()], &["link".to_string(), "target".to_string()], Dialect::Cmd, Dialect::Unix);
+    let r = translate_dynamic(
+        "mklink",
+        &["/D".to_string()],
+        &["link".to_string(), "target".to_string()],
+        Dialect::Cmd,
+        Dialect::Unix,
+    );
     assert_eq!(r, Some("ln -s target link".to_string()));
 }
 
 #[test]
 fn test_cmd_runas_to_unix() {
-    let r = translate_dynamic("runas", &[], &["cmd".to_string()], Dialect::Cmd, Dialect::Unix);
+    let r = translate_dynamic(
+        "runas",
+        &[],
+        &["cmd".to_string()],
+        Dialect::Cmd,
+        Dialect::Unix,
+    );
     assert!(r.unwrap().contains("sudo"));
 }
 
@@ -299,25 +432,49 @@ fn test_cmd_runas_to_unix() {
 
 #[test]
 fn test_unix_systemctl_to_cmd() {
-    let r = translate_dynamic("systemctl", &[], &["start".to_string(), "nginx".to_string()], Dialect::Unix, Dialect::Cmd);
+    let r = translate_dynamic(
+        "systemctl",
+        &[],
+        &["start".to_string(), "nginx".to_string()],
+        Dialect::Unix,
+        Dialect::Cmd,
+    );
     assert_eq!(r, Some("sc start nginx".to_string()));
 }
 
 #[test]
 fn test_unix_systemctl_status_to_cmd() {
-    let r = translate_dynamic("systemctl", &[], &["status".to_string(), "nginx".to_string()], Dialect::Unix, Dialect::Cmd);
+    let r = translate_dynamic(
+        "systemctl",
+        &[],
+        &["status".to_string(), "nginx".to_string()],
+        Dialect::Unix,
+        Dialect::Cmd,
+    );
     assert_eq!(r, Some("sc query nginx".to_string()));
 }
 
 #[test]
 fn test_unix_ln_to_cmd() {
-    let r = translate_dynamic("ln", &["-s".to_string()], &["target".to_string(), "link".to_string()], Dialect::Unix, Dialect::Cmd);
+    let r = translate_dynamic(
+        "ln",
+        &["-s".to_string()],
+        &["target".to_string(), "link".to_string()],
+        Dialect::Unix,
+        Dialect::Cmd,
+    );
     assert_eq!(r, Some("mklink /D link target".to_string()));
 }
 
 #[test]
 fn test_unix_sudo_to_cmd() {
-    let r = translate_dynamic("sudo", &[], &["ls".to_string()], Dialect::Unix, Dialect::Cmd);
+    let r = translate_dynamic(
+        "sudo",
+        &[],
+        &["ls".to_string()],
+        Dialect::Unix,
+        Dialect::Cmd,
+    );
     assert!(r.unwrap().contains("runas"));
 }
 
@@ -327,13 +484,25 @@ fn test_unix_sudo_to_cmd() {
 
 #[test]
 fn test_ps_start_service_to_cmd() {
-    let r = translate_dynamic("Start-Service", &[], &["nginx".to_string()], Dialect::PowerShell, Dialect::Cmd);
+    let r = translate_dynamic(
+        "Start-Service",
+        &[],
+        &["nginx".to_string()],
+        Dialect::PowerShell,
+        Dialect::Cmd,
+    );
     assert_eq!(r, Some("sc start nginx".to_string()));
 }
 
 #[test]
 fn test_ps_set_location_to_cmd() {
-    let r = translate_dynamic("Set-Location", &[], &["C:\\tmp".to_string()], Dialect::PowerShell, Dialect::Cmd);
+    let r = translate_dynamic(
+        "Set-Location",
+        &[],
+        &["C:\\tmp".to_string()],
+        Dialect::PowerShell,
+        Dialect::Cmd,
+    );
     assert_eq!(r, Some("cd /d C:\\tmp".to_string()));
 }
 
@@ -343,7 +512,13 @@ fn test_ps_set_location_to_cmd() {
 
 #[test]
 fn test_cmd_sc_start_to_ps() {
-    let r = translate_dynamic("sc", &[], &["start".to_string(), "nginx".to_string()], Dialect::Cmd, Dialect::PowerShell);
+    let r = translate_dynamic(
+        "sc",
+        &[],
+        &["start".to_string(), "nginx".to_string()],
+        Dialect::Cmd,
+        Dialect::PowerShell,
+    );
     assert_eq!(r, Some("Start-Service nginx".to_string()));
 }
 
@@ -355,12 +530,24 @@ fn test_cmd_tasklist_to_ps() {
 
 #[test]
 fn test_cmd_taskkill_to_ps() {
-    let r = translate_dynamic("taskkill", &["/f".to_string()], &["/im".to_string(), "nginx.exe".to_string()], Dialect::Cmd, Dialect::PowerShell);
+    let r = translate_dynamic(
+        "taskkill",
+        &["/f".to_string()],
+        &["/im".to_string(), "nginx.exe".to_string()],
+        Dialect::Cmd,
+        Dialect::PowerShell,
+    );
     assert_eq!(r, Some("Stop-Process -Name nginx.exe -Force".to_string()));
 }
 
 #[test]
 fn test_cmd_mklink_dir_to_ps() {
-    let r = translate_dynamic("mklink", &["/D".to_string()], &["link".to_string(), "target".to_string()], Dialect::Cmd, Dialect::PowerShell);
+    let r = translate_dynamic(
+        "mklink",
+        &["/D".to_string()],
+        &["link".to_string(), "target".to_string()],
+        Dialect::Cmd,
+        Dialect::PowerShell,
+    );
     assert!(r.unwrap().contains("SymbolicLink"));
 }

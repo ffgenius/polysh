@@ -11,22 +11,48 @@ use polysh::translator::{detect_input_format, lint_command, translate_with_regis
 // ---------------------------------------------------------------------------
 
 fn ps7(target: Dialect) -> ShellInfo {
-    ShellInfo { dialect: Dialect::PowerShell, supports_conditional_connectors: true, needs_unix_translation: true, target, version: Some(7) }
+    ShellInfo {
+        dialect: Dialect::PowerShell,
+        supports_conditional_connectors: true,
+        needs_unix_translation: true,
+        target,
+        version: Some(7),
+    }
 }
 
 fn legacy_ps() -> ShellInfo {
-    ShellInfo { dialect: Dialect::PowerShell, supports_conditional_connectors: false, needs_unix_translation: true, target: Dialect::PowerShell, version: Some(5) }
+    ShellInfo {
+        dialect: Dialect::PowerShell,
+        supports_conditional_connectors: false,
+        needs_unix_translation: true,
+        target: Dialect::PowerShell,
+        version: Some(5),
+    }
 }
 
 fn unix() -> ShellInfo {
-    ShellInfo { dialect: Dialect::Unix, supports_conditional_connectors: true, needs_unix_translation: false, target: Dialect::Unix, version: None }
+    ShellInfo {
+        dialect: Dialect::Unix,
+        supports_conditional_connectors: true,
+        needs_unix_translation: false,
+        target: Dialect::Unix,
+        version: None,
+    }
 }
 
 fn cmd() -> ShellInfo {
-    ShellInfo { dialect: Dialect::Cmd, supports_conditional_connectors: true, needs_unix_translation: true, target: Dialect::Cmd, version: None }
+    ShellInfo {
+        dialect: Dialect::Cmd,
+        supports_conditional_connectors: true,
+        needs_unix_translation: true,
+        target: Dialect::Cmd,
+        version: None,
+    }
 }
 
-fn reg() -> MappingRegistry { MappingRegistry::new() }
+fn reg() -> MappingRegistry {
+    MappingRegistry::new()
+}
 
 fn tr(cmd: &str, from: Dialect, to: Dialect, shell: &ShellInfo) -> String {
     translate_with_registry(cmd, from, to, shell, &reg())
@@ -51,7 +77,13 @@ fn unix_to_ps_file_ops() {
 fn ps_to_unix_file_ops() {
     let s = unix();
     // Remove-Item is unique (only RM has it; RMDIR has "Remove-Item -Directory")
-    assert!(tr("Remove-Item -Recurse -Force dist", Dialect::PowerShell, Dialect::Unix, &s).contains("rm"));
+    assert!(tr(
+        "Remove-Item -Recurse -Force dist",
+        Dialect::PowerShell,
+        Dialect::Unix,
+        &s
+    )
+    .contains("rm"));
     // NOTE: Get-ChildItem is ambiguous (LS vs UMASK), Copy-Item is ambiguous (CP vs RSYNC).
     // Use unambiguous commands:
     assert!(tr("Move-Item old new", Dialect::PowerShell, Dialect::Unix, &s).contains("mv"));
@@ -85,27 +117,43 @@ fn cmd_to_unix_file_ops() {
 fn cmd_to_ps() {
     let s = ps7(Dialect::PowerShell);
     let r1 = tr("del /s /q dist", Dialect::Cmd, Dialect::PowerShell, &s);
-assert!(r1.contains("Remove-Item"), "got: {}", r1);
+    assert!(r1.contains("Remove-Item"), "got: {}", r1);
 
     let r2 = tr("dir /a", Dialect::Cmd, Dialect::PowerShell, &s);
-// dir maps to STAT in CMD index (last-write wins), so expect stat output
+    // dir maps to STAT in CMD index (last-write wins), so expect stat output
     assert!(!r2.is_empty(), "got empty");
-    assert!(r2.contains("Get-Item") || r2.contains("Get-ChildItem"), "got: {}", r2);
+    assert!(
+        r2.contains("Get-Item") || r2.contains("Get-ChildItem"),
+        "got: {}",
+        r2
+    );
 
     let r3 = tr("findstr /i pat file", Dialect::Cmd, Dialect::PowerShell, &s);
-assert!(r3.contains("Select-String"), "got: {}", r3);
+    assert!(r3.contains("Select-String"), "got: {}", r3);
 }
 
 #[test]
 fn ps_to_cmd() {
     let s = cmd();
     // Remove-Item → del (unique mapping)
-    assert!(tr("Remove-Item -Recurse -Force dist", Dialect::PowerShell, Dialect::Cmd, &s).contains("del"));
+    assert!(tr(
+        "Remove-Item -Recurse -Force dist",
+        Dialect::PowerShell,
+        Dialect::Cmd,
+        &s
+    )
+    .contains("del"));
     // NOTE: Get-ChildItem is ambiguous (LS vs UMASK share the PS name).
     // Clear-Host → cls (unique mapping)
     assert!(tr("Clear-Host", Dialect::PowerShell, Dialect::Cmd, &s).contains("cls"));
     // Get-Content → type (unique mapping, only CAT has powershell="Get-Content")
-    assert!(tr("Get-Content file.txt", Dialect::PowerShell, Dialect::Cmd, &s).contains("type"));
+    assert!(tr(
+        "Get-Content file.txt",
+        Dialect::PowerShell,
+        Dialect::Cmd,
+        &s
+    )
+    .contains("type"));
 }
 
 // ============================================================================
@@ -115,7 +163,12 @@ fn ps_to_cmd() {
 #[test]
 fn connectors_preserved_ps7() {
     let s = ps7(Dialect::PowerShell);
-    let r = tr("rm -rf dist && echo done || echo fail", Dialect::Unix, Dialect::PowerShell, &s);
+    let r = tr(
+        "rm -rf dist && echo done || echo fail",
+        Dialect::Unix,
+        Dialect::PowerShell,
+        &s,
+    );
     assert!(r.contains("&&"));
     assert!(r.contains("||"));
     assert!(r.contains("Remove-Item"));
@@ -125,7 +178,12 @@ fn connectors_preserved_ps7() {
 #[test]
 fn connectors_converted_legacy_ps() {
     let s = legacy_ps();
-    let r = tr("rm -rf dist && echo done", Dialect::Unix, Dialect::PowerShell, &s);
+    let r = tr(
+        "rm -rf dist && echo done",
+        Dialect::Unix,
+        Dialect::PowerShell,
+        &s,
+    );
     assert!(r.contains("if ($?)"));
     assert!(!r.contains("&&"));
 }
@@ -133,7 +191,12 @@ fn connectors_converted_legacy_ps() {
 #[test]
 fn connectors_inside_parens_not_split() {
     let s = ps7(Dialect::PowerShell);
-    let r = tr("(echo a && echo b) || echo c", Dialect::Unix, Dialect::PowerShell, &s);
+    let r = tr(
+        "(echo a && echo b) || echo c",
+        Dialect::Unix,
+        Dialect::PowerShell,
+        &s,
+    );
     assert!(r.contains("(echo a && echo b)"));
 }
 
@@ -153,7 +216,12 @@ fn simple_pipe() {
 #[test]
 fn pipe_with_connectors() {
     let s = ps7(Dialect::PowerShell);
-    let r = tr("cat f | grep err && echo found", Dialect::Unix, Dialect::PowerShell, &s);
+    let r = tr(
+        "cat f | grep err && echo found",
+        Dialect::Unix,
+        Dialect::PowerShell,
+        &s,
+    );
     assert!(r.contains("Get-Content"));
     assert!(r.contains("Select-String"));
     assert!(r.contains("&&"));
@@ -163,7 +231,12 @@ fn pipe_with_connectors() {
 #[test]
 fn multiple_pipes() {
     let s = ps7(Dialect::PowerShell);
-    let r = tr("cat log | grep ERR | wc -l && echo done", Dialect::Unix, Dialect::PowerShell, &s);
+    let r = tr(
+        "cat log | grep ERR | wc -l && echo done",
+        Dialect::Unix,
+        Dialect::PowerShell,
+        &s,
+    );
     assert!(r.contains("Get-Content"));
     assert!(r.contains("Select-String"));
     assert!(r.contains("Measure-Object"));
@@ -182,8 +255,20 @@ fn same_dialect_unix_noop() {
 
 #[test]
 fn same_dialect_ps_noop() {
-    let s = ShellInfo { target: Dialect::PowerShell, needs_unix_translation: false, ..ps7(Dialect::PowerShell) };
-    assert_eq!(tr("Get-ChildItem -Force", Dialect::PowerShell, Dialect::PowerShell, &s), "Get-ChildItem -Force");
+    let s = ShellInfo {
+        target: Dialect::PowerShell,
+        needs_unix_translation: false,
+        ..ps7(Dialect::PowerShell)
+    };
+    assert_eq!(
+        tr(
+            "Get-ChildItem -Force",
+            Dialect::PowerShell,
+            Dialect::PowerShell,
+            &s
+        ),
+        "Get-ChildItem -Force"
+    );
 }
 
 // ============================================================================
@@ -192,21 +277,44 @@ fn same_dialect_ps_noop() {
 
 #[test]
 fn detect_unix() {
-    for c in &["ls -la", "grep pat file", "rm -rf dir", "cat f", "cp -r a b", "sed 's/a/b/' f"] {
+    for c in &[
+        "ls -la",
+        "grep pat file",
+        "rm -rf dir",
+        "cat f",
+        "cp -r a b",
+        "sed 's/a/b/' f",
+    ] {
         assert_eq!(detect_input_format(c), Dialect::Unix, "failed: {}", c);
     }
 }
 
 #[test]
 fn detect_ps() {
-    for c in &["Remove-Item -Force d", "Get-ChildItem", "Select-String p f", "Write-Host hi", "Clear-Host", "Get-Location"] {
+    for c in &[
+        "Remove-Item -Force d",
+        "Get-ChildItem",
+        "Select-String p f",
+        "Write-Host hi",
+        "Clear-Host",
+        "Get-Location",
+    ] {
         assert_eq!(detect_input_format(c), Dialect::PowerShell, "failed: {}", c);
     }
 }
 
 #[test]
 fn detect_cmd() {
-    for c in &["del /s /q d", "dir /a", "copy a b", "type f", "findstr p f", "cls", "tasklist", "echo %USERNAME%"] {
+    for c in &[
+        "del /s /q d",
+        "dir /a",
+        "copy a b",
+        "type f",
+        "findstr p f",
+        "cls",
+        "tasklist",
+        "echo %USERNAME%",
+    ] {
         assert_eq!(detect_input_format(c), Dialect::Cmd, "failed: {}", c);
     }
 }
@@ -217,7 +325,14 @@ fn detect_cmd() {
 
 #[test]
 fn lint_known_passes() {
-    for c in &["rm -rf d", "ls -la", "grep -i p f", "Remove-Item -Force d", "Get-ChildItem", "del /s /q d"] {
+    for c in &[
+        "rm -rf d",
+        "ls -la",
+        "grep -i p f",
+        "Remove-Item -Force d",
+        "Get-ChildItem",
+        "del /s /q d",
+    ] {
         assert!(lint_command(c).unsupported.is_empty(), "failed: {}", c);
     }
 }
@@ -241,13 +356,26 @@ fn lint_unknown_in_pipe() {
 #[test]
 fn unknown_passthrough() {
     let s = ps7(Dialect::PowerShell);
-    assert_eq!(tr("customtool --out dir", Dialect::Unix, Dialect::PowerShell, &s), "customtool --out dir");
+    assert_eq!(
+        tr(
+            "customtool --out dir",
+            Dialect::Unix,
+            Dialect::PowerShell,
+            &s
+        ),
+        "customtool --out dir"
+    );
 }
 
 #[test]
 fn mixed_known_unknown_pipe() {
     let s = ps7(Dialect::PowerShell);
-    let r = tr("ls -la | customtool", Dialect::Unix, Dialect::PowerShell, &s);
+    let r = tr(
+        "ls -la | customtool",
+        Dialect::Unix,
+        Dialect::PowerShell,
+        &s,
+    );
     assert!(r.contains("Get-ChildItem"));
     assert!(r.contains("customtool"));
 }
@@ -273,7 +401,12 @@ fn env_var_passthrough() {
 #[test]
 fn subshell_passthrough() {
     let s = ps7(Dialect::PowerShell);
-    let r = tr("(cd /tmp && rm -rf *)", Dialect::Unix, Dialect::PowerShell, &s);
+    let r = tr(
+        "(cd /tmp && rm -rf *)",
+        Dialect::Unix,
+        Dialect::PowerShell,
+        &s,
+    );
     assert!(r.starts_with("("));
 }
 
@@ -304,10 +437,10 @@ fn roundtrip_unix_cmd_ps() {
     let s_ps = ps7(Dialect::PowerShell);
     // ls -la → CMD → Get-ChildItem -Force (via dir /a)
     let cm = tr("ls -la", Dialect::Unix, Dialect::Cmd, &s_cmd);
-assert!(cm.contains("dir") || cm.contains("/a"), "got: {}", cm);
+    assert!(cm.contains("dir") || cm.contains("/a"), "got: {}", cm);
     // cmd round-trips back to PS
     let ps = tr(&cm, Dialect::Cmd, Dialect::PowerShell, &s_ps);
-assert!(!ps.is_empty(), "roundtrip produced empty");
+    assert!(!ps.is_empty(), "roundtrip produced empty");
 }
 
 // ============================================================================
@@ -317,13 +450,34 @@ assert!(!ps.is_empty(), "roundtrip produced empty");
 #[test]
 fn flags_all_directions() {
     let r = reg();
-    assert_eq!(r.translate_flag(Dialect::Unix, "rm", "-rf", Dialect::PowerShell), Some("-Recurse -Force"));
-    assert_eq!(r.translate_flag(Dialect::Unix, "rm", "-r", Dialect::PowerShell), Some("-Recurse"));
-    assert_eq!(r.translate_flag(Dialect::Unix, "rm", "-f", Dialect::PowerShell), Some("-Force"));
-    assert_eq!(r.translate_flag(Dialect::Unix, "rm", "-rf", Dialect::Cmd), Some("/s /q"));
-    assert_eq!(r.translate_flag(Dialect::Unix, "grep", "-i", Dialect::PowerShell), Some("-CaseSensitive:$false"));
-    assert_eq!(r.translate_flag(Dialect::Unix, "grep", "-i", Dialect::Cmd), Some("/i"));
-    assert_eq!(r.translate_flag(Dialect::Unix, "grep", "-n", Dialect::PowerShell), Some("-LineNumber"));
+    assert_eq!(
+        r.translate_flag(Dialect::Unix, "rm", "-rf", Dialect::PowerShell),
+        Some("-Recurse -Force")
+    );
+    assert_eq!(
+        r.translate_flag(Dialect::Unix, "rm", "-r", Dialect::PowerShell),
+        Some("-Recurse")
+    );
+    assert_eq!(
+        r.translate_flag(Dialect::Unix, "rm", "-f", Dialect::PowerShell),
+        Some("-Force")
+    );
+    assert_eq!(
+        r.translate_flag(Dialect::Unix, "rm", "-rf", Dialect::Cmd),
+        Some("/s /q")
+    );
+    assert_eq!(
+        r.translate_flag(Dialect::Unix, "grep", "-i", Dialect::PowerShell),
+        Some("-CaseSensitive:$false")
+    );
+    assert_eq!(
+        r.translate_flag(Dialect::Unix, "grep", "-i", Dialect::Cmd),
+        Some("/i")
+    );
+    assert_eq!(
+        r.translate_flag(Dialect::Unix, "grep", "-n", Dialect::PowerShell),
+        Some("-LineNumber")
+    );
 }
 
 // ============================================================================
@@ -347,23 +501,46 @@ fn dynamic_find_delete() {
     // -delete alone (without -name) works; the dynamic translator currently
     // can't pair -name's pattern arg since it lands in the args list, not flags.
     let r = tr("find . -delete", Dialect::Unix, Dialect::PowerShell, &s);
-assert!(r.contains("Get-ChildItem"), "got: {}", r);
+    assert!(r.contains("Get-ChildItem"), "got: {}", r);
     assert!(r.contains("Remove-Item"), "got: {}", r);
 }
 
 #[test]
 fn dynamic_sed_s() {
     let s = ps7(Dialect::PowerShell);
-    let r = tr("sed 's/foo/bar/' file.txt", Dialect::Unix, Dialect::PowerShell, &s);
+    let r = tr(
+        "sed 's/foo/bar/' file.txt",
+        Dialect::Unix,
+        Dialect::PowerShell,
+        &s,
+    );
     assert!(r.contains("-replace"));
 }
 
 #[test]
 fn dynamic_systemctl() {
     let s = ps7(Dialect::PowerShell);
-    assert!(tr("systemctl start nginx", Dialect::Unix, Dialect::PowerShell, &s).contains("Start-Service"));
-    assert!(tr("systemctl stop nginx", Dialect::Unix, Dialect::PowerShell, &s).contains("Stop-Service"));
-    assert!(tr("systemctl status nginx", Dialect::Unix, Dialect::PowerShell, &s).contains("Get-Service"));
+    assert!(tr(
+        "systemctl start nginx",
+        Dialect::Unix,
+        Dialect::PowerShell,
+        &s
+    )
+    .contains("Start-Service"));
+    assert!(tr(
+        "systemctl stop nginx",
+        Dialect::Unix,
+        Dialect::PowerShell,
+        &s
+    )
+    .contains("Stop-Service"));
+    assert!(tr(
+        "systemctl status nginx",
+        Dialect::Unix,
+        Dialect::PowerShell,
+        &s
+    )
+    .contains("Get-Service"));
 }
 
 #[test]
@@ -376,13 +553,19 @@ fn dynamic_tr() {
 #[test]
 fn dynamic_sleep() {
     let s = ps7(Dialect::PowerShell);
-    assert_eq!(tr("sleep 30", Dialect::Unix, Dialect::PowerShell, &s), "Start-Sleep 30");
+    assert_eq!(
+        tr("sleep 30", Dialect::Unix, Dialect::PowerShell, &s),
+        "Start-Sleep 30"
+    );
 }
 
 #[test]
 fn dynamic_whoami() {
     let s = ps7(Dialect::PowerShell);
-    assert_eq!(tr("whoami", Dialect::Unix, Dialect::PowerShell, &s), "$env:USERNAME");
+    assert_eq!(
+        tr("whoami", Dialect::Unix, Dialect::PowerShell, &s),
+        "$env:USERNAME"
+    );
 }
 
 #[test]
@@ -398,11 +581,18 @@ fn dynamic_uptime() {
 
 #[test]
 fn dialect_from_str_all() {
-    for a in &["unix", "bash", "sh", "ash", "dash", "zsh", "fish", "ksh", "tcsh"] {
+    for a in &[
+        "unix", "bash", "sh", "ash", "dash", "zsh", "fish", "ksh", "tcsh",
+    ] {
         assert_eq!(Dialect::from_str(a), Some(Dialect::Unix), "alias: {}", a);
     }
     for a in &["powershell", "ps", "pwsh"] {
-        assert_eq!(Dialect::from_str(a), Some(Dialect::PowerShell), "alias: {}", a);
+        assert_eq!(
+            Dialect::from_str(a),
+            Some(Dialect::PowerShell),
+            "alias: {}",
+            a
+        );
     }
     for a in &["cmd", "dos", "batch"] {
         assert_eq!(Dialect::from_str(a), Some(Dialect::Cmd), "alias: {}", a);
@@ -433,13 +623,24 @@ fn registry_has_expected_coverage() {
 fn core_commands_known() {
     let r = reg();
     for (d, name) in &[
-        (Dialect::Unix, "rm"), (Dialect::Unix, "ls"), (Dialect::Unix, "grep"),
-        (Dialect::Unix, "cat"), (Dialect::Unix, "cp"), (Dialect::Unix, "mv"),
-        (Dialect::Unix, "mkdir"), (Dialect::Unix, "find"), (Dialect::Unix, "echo"),
-        (Dialect::Cmd, "del"), (Dialect::Cmd, "dir"), (Dialect::Cmd, "findstr"),
-        (Dialect::Cmd, "type"), (Dialect::Cmd, "tasklist"),
-        (Dialect::PowerShell, "Remove-Item"), (Dialect::PowerShell, "Get-ChildItem"),
-        (Dialect::PowerShell, "Select-String"), (Dialect::PowerShell, "Get-Content"),
+        (Dialect::Unix, "rm"),
+        (Dialect::Unix, "ls"),
+        (Dialect::Unix, "grep"),
+        (Dialect::Unix, "cat"),
+        (Dialect::Unix, "cp"),
+        (Dialect::Unix, "mv"),
+        (Dialect::Unix, "mkdir"),
+        (Dialect::Unix, "find"),
+        (Dialect::Unix, "echo"),
+        (Dialect::Cmd, "del"),
+        (Dialect::Cmd, "dir"),
+        (Dialect::Cmd, "findstr"),
+        (Dialect::Cmd, "type"),
+        (Dialect::Cmd, "tasklist"),
+        (Dialect::PowerShell, "Remove-Item"),
+        (Dialect::PowerShell, "Get-ChildItem"),
+        (Dialect::PowerShell, "Select-String"),
+        (Dialect::PowerShell, "Get-Content"),
     ] {
         assert!(r.is_known(*d, name), "missing: {:?}/{}", d, name);
     }
@@ -452,7 +653,13 @@ fn core_commands_known() {
 #[test]
 fn cross_platform_tools_unchanged() {
     let s = ps7(Dialect::PowerShell);
-    for cmd in &["git clone url", "cargo build", "docker run img", "npm install", "go build"] {
+    for cmd in &[
+        "git clone url",
+        "cargo build",
+        "docker run img",
+        "npm install",
+        "go build",
+    ] {
         let r = tr(cmd, Dialect::Unix, Dialect::PowerShell, &s);
         assert!(!r.is_empty(), "empty result for: {}", cmd);
     }
@@ -486,14 +693,24 @@ fn whitespace_only() {
 #[test]
 fn many_connectors() {
     let s = ps7(Dialect::PowerShell);
-    let r = tr("echo a && echo b && echo c && echo d && echo e", Dialect::Unix, Dialect::PowerShell, &s);
+    let r = tr(
+        "echo a && echo b && echo c && echo d && echo e",
+        Dialect::Unix,
+        Dialect::PowerShell,
+        &s,
+    );
     assert_eq!(r.matches("&&").count(), 4);
 }
 
 #[test]
 fn deep_nesting() {
     let s = ps7(Dialect::PowerShell);
-    tr("echo (((((hello)))))", Dialect::Unix, Dialect::PowerShell, &s); // must not panic
+    tr(
+        "echo (((((hello)))))",
+        Dialect::Unix,
+        Dialect::PowerShell,
+        &s,
+    ); // must not panic
 }
 
 #[test]
@@ -510,7 +727,11 @@ fn very_long_command() {
 #[test]
 fn network_translations() {
     let s = ps7(Dialect::PowerShell);
-    assert!(tr("ping -c 4 host", Dialect::Unix, Dialect::PowerShell, &s).contains("Test-Connection"));
+    assert!(
+        tr("ping -c 4 host", Dialect::Unix, Dialect::PowerShell, &s).contains("Test-Connection")
+    );
     assert!(tr("ifconfig -a", Dialect::Unix, Dialect::PowerShell, &s).contains("Get-NetAdapter"));
-    assert!(tr("netstat -a", Dialect::Unix, Dialect::PowerShell, &s).contains("Get-NetTCPConnection"));
+    assert!(
+        tr("netstat -a", Dialect::Unix, Dialect::PowerShell, &s).contains("Get-NetTCPConnection")
+    );
 }

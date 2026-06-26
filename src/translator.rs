@@ -58,8 +58,7 @@ pub fn detect_input_format(command: &str) -> Dialect {
 
     // CMD indicators
     let cmd_indicators = [
-        "del ", "dir ", "copy ", "move ", "md ", "type ", "findstr", "cls", "tasklist",
-        "taskkill",
+        "del ", "dir ", "copy ", "move ", "md ", "type ", "findstr", "cls", "tasklist", "taskkill",
     ];
     for indicator in &cmd_indicators {
         if command.to_lowercase().contains(indicator) {
@@ -78,7 +77,8 @@ pub fn detect_input_format(command: &str) -> Dialect {
 fn regex_boundary_match(text: &str, word: &str) -> bool {
     let lower = text.to_lowercase();
     // Check for word boundaries using simple string matching
-    if lower.starts_with(word) && (lower.len() == word.len() || lower.as_bytes()[word.len()].is_ascii_whitespace())
+    if lower.starts_with(word)
+        && (lower.len() == word.len() || lower.as_bytes()[word.len()].is_ascii_whitespace())
     {
         return true;
     }
@@ -278,7 +278,10 @@ fn translate_segment(
 
 /// Check if tokens contain a here-document operator.
 fn has_here_doc(tokens: &[RoleToken]) -> bool {
-    let values: Vec<&str> = tokens.iter().map(|t| t.reconstructed_value.as_str()).collect();
+    let values: Vec<&str> = tokens
+        .iter()
+        .map(|t| t.reconstructed_value.as_str())
+        .collect();
     for i in 0..values.len().saturating_sub(1) {
         if values[i] == "<" && values[i + 1] == "<" {
             return true;
@@ -295,7 +298,9 @@ fn reclassify_cmd_flags(tokens: &[RoleToken], flags: &[String]) -> Vec<String> {
             && t.quote_type.is_none()
             && t.reconstructed_value.starts_with('/')
             && t.reconstructed_value.len() > 1
-            && t.reconstructed_value[1..].chars().all(|c| c.is_ascii_alphabetic())
+            && t.reconstructed_value[1..]
+                .chars()
+                .all(|c| c.is_ascii_alphabetic())
         {
             if !result.contains(&t.reconstructed_value) {
                 result.push(t.reconstructed_value.clone());
@@ -433,10 +438,7 @@ pub fn lint_command(command: &str) -> LintResult {
         let pipe_parts = split_by_pipe(part);
         for seg in &pipe_parts {
             let trimmed = seg.trim();
-            if trimmed.is_empty()
-                || trimmed.starts_with('(')
-                || trimmed.starts_with('{')
-            {
+            if trimmed.is_empty() || trimmed.starts_with('(') || trimmed.starts_with('{') {
                 continue;
             }
 

@@ -133,16 +133,10 @@ impl MappingRegistry {
             // Index flag groups in all three dialects
             for fg in mapping.flags {
                 if !fg.unix.is_empty() {
-                    flag_index.insert(
-                        (Dialect::Unix, mapping.unix, fg.unix),
-                        fg,
-                    );
+                    flag_index.insert((Dialect::Unix, mapping.unix, fg.unix), fg);
                 }
                 if !fg.powershell.is_empty() {
-                    flag_index.insert(
-                        (Dialect::PowerShell, mapping.powershell, fg.powershell),
-                        fg,
-                    );
+                    flag_index.insert((Dialect::PowerShell, mapping.powershell, fg.powershell), fg);
                 }
                 if !fg.cmd.is_empty() {
                     flag_index.insert((Dialect::Cmd, mapping.cmd, fg.cmd), fg);
@@ -157,11 +151,7 @@ impl MappingRegistry {
     }
 
     /// Look up a command mapping by source dialect and command name.
-    pub fn lookup_cmd(
-        &self,
-        source: Dialect,
-        cmd_name: &str,
-    ) -> Option<&'static CommandMapping> {
+    pub fn lookup_cmd(&self, source: Dialect, cmd_name: &str) -> Option<&'static CommandMapping> {
         self.cmd_index.get(&(source, cmd_name)).copied()
     }
 

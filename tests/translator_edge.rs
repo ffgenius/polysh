@@ -6,30 +6,55 @@
 use polysh::detector::ShellInfo;
 use polysh::mappings::{Dialect, MappingRegistry};
 use polysh::translator::{
-    detect_input_format, lint_command,
-    translate_with_registry, translate_command,
+    detect_input_format, lint_command, translate_command, translate_with_registry,
 };
 
 // Re-exported internals (test-only)
 // We test through the public API only.
 
 fn ps7(target: Dialect) -> ShellInfo {
-    ShellInfo { dialect: Dialect::PowerShell, supports_conditional_connectors: true, needs_unix_translation: true, target, version: Some(7) }
+    ShellInfo {
+        dialect: Dialect::PowerShell,
+        supports_conditional_connectors: true,
+        needs_unix_translation: true,
+        target,
+        version: Some(7),
+    }
 }
 
 fn legacy_ps() -> ShellInfo {
-    ShellInfo { dialect: Dialect::PowerShell, supports_conditional_connectors: false, needs_unix_translation: true, target: Dialect::PowerShell, version: Some(5) }
+    ShellInfo {
+        dialect: Dialect::PowerShell,
+        supports_conditional_connectors: false,
+        needs_unix_translation: true,
+        target: Dialect::PowerShell,
+        version: Some(5),
+    }
 }
 
 fn unix() -> ShellInfo {
-    ShellInfo { dialect: Dialect::Unix, supports_conditional_connectors: true, needs_unix_translation: false, target: Dialect::Unix, version: None }
+    ShellInfo {
+        dialect: Dialect::Unix,
+        supports_conditional_connectors: true,
+        needs_unix_translation: false,
+        target: Dialect::Unix,
+        version: None,
+    }
 }
 
 fn cmd() -> ShellInfo {
-    ShellInfo { dialect: Dialect::Cmd, supports_conditional_connectors: true, needs_unix_translation: true, target: Dialect::Cmd, version: None }
+    ShellInfo {
+        dialect: Dialect::Cmd,
+        supports_conditional_connectors: true,
+        needs_unix_translation: true,
+        target: Dialect::Cmd,
+        version: None,
+    }
 }
 
-fn reg() -> MappingRegistry { MappingRegistry::new() }
+fn reg() -> MappingRegistry {
+    MappingRegistry::new()
+}
 
 fn tr(cmd: &str, from: Dialect, to: Dialect, shell: &ShellInfo) -> String {
     translate_with_registry(cmd, from, to, shell, &reg())
@@ -60,7 +85,12 @@ fn legacy_ps_single_or() {
 #[test]
 fn legacy_ps_chain_and_then_or() {
     let s = legacy_ps();
-    let r = tr("cmd1 && cmd2 || cmd3", Dialect::Unix, Dialect::PowerShell, &s);
+    let r = tr(
+        "cmd1 && cmd2 || cmd3",
+        Dialect::Unix,
+        Dialect::PowerShell,
+        &s,
+    );
     assert!(r.contains("if ($?)"));
     assert!(r.contains("if (-not $?)"));
 }
@@ -95,7 +125,11 @@ fn backtick_and_in_cmd() {
     // Even with non-PS source, backtick escapes should be handled
     let s = ps7(Dialect::PowerShell);
     let r = tr("echo `&`& echo", Dialect::Unix, Dialect::PowerShell, &s);
-    assert!(!r.contains("`&`&"), "Backtick escape should be converted: {}", r);
+    assert!(
+        !r.contains("`&`&"),
+        "Backtick escape should be converted: {}",
+        r
+    );
 }
 
 // ============================================================================
@@ -124,7 +158,12 @@ fn split_connectors_trailing_connector() {
 fn split_connectors_consecutive() {
     // "cmd1 && || cmd2" - consecutive connectors
     let s = ps7(Dialect::PowerShell);
-    tr("echo a && || echo b", Dialect::Unix, Dialect::PowerShell, &s);
+    tr(
+        "echo a && || echo b",
+        Dialect::Unix,
+        Dialect::PowerShell,
+        &s,
+    );
     // Must not panic
 }
 
@@ -156,7 +195,12 @@ fn split_pipe_trailing_pipe() {
 fn split_pipe_inside_subshell() {
     // | inside $(...) should not split top-level
     let s = ps7(Dialect::PowerShell);
-    let r = tr("echo $(ls | grep rs)", Dialect::Unix, Dialect::PowerShell, &s);
+    let r = tr(
+        "echo $(ls | grep rs)",
+        Dialect::Unix,
+        Dialect::PowerShell,
+        &s,
+    );
     // Should pass through since it has $(...)
     assert!(r.contains("$("));
 }
@@ -235,7 +279,12 @@ fn cmd_sub_passes_through() {
 #[test]
 fn nested_cmd_sub_passes_through() {
     let s = ps7(Dialect::PowerShell);
-    let r = tr("echo $(echo $(pwd))", Dialect::Unix, Dialect::PowerShell, &s);
+    let r = tr(
+        "echo $(echo $(pwd))",
+        Dialect::Unix,
+        Dialect::PowerShell,
+        &s,
+    );
     assert!(r.contains("$("));
 }
 
@@ -280,7 +329,12 @@ fn dynamic_chmod_octal() {
 #[test]
 fn dynamic_chown() {
     let s = ps7(Dialect::PowerShell);
-    let r = tr("chown user file.txt", Dialect::Unix, Dialect::PowerShell, &s);
+    let r = tr(
+        "chown user file.txt",
+        Dialect::Unix,
+        Dialect::PowerShell,
+        &s,
+    );
     assert!(r.contains("icacls"));
     assert!(r.contains("setowner"));
 }
@@ -288,11 +342,21 @@ fn dynamic_chown() {
 #[test]
 fn dynamic_systemctl_enable_disable() {
     let s = ps7(Dialect::PowerShell);
-    let en = tr("systemctl enable nginx", Dialect::Unix, Dialect::PowerShell, &s);
+    let en = tr(
+        "systemctl enable nginx",
+        Dialect::Unix,
+        Dialect::PowerShell,
+        &s,
+    );
     assert!(en.contains("Set-Service"));
     assert!(en.contains("Automatic"));
 
-    let dis = tr("systemctl disable nginx", Dialect::Unix, Dialect::PowerShell, &s);
+    let dis = tr(
+        "systemctl disable nginx",
+        Dialect::Unix,
+        Dialect::PowerShell,
+        &s,
+    );
     assert!(dis.contains("Set-Service"));
     assert!(dis.contains("Disabled"));
 }
@@ -344,7 +408,12 @@ fn dynamic_gzip_translation() {
 #[test]
 fn dynamic_dig_short_translation() {
     let s = ps7(Dialect::PowerShell);
-    let r = tr("dig +short example.com", Dialect::Unix, Dialect::PowerShell, &s);
+    let r = tr(
+        "dig +short example.com",
+        Dialect::Unix,
+        Dialect::PowerShell,
+        &s,
+    );
     assert!(r.contains("Resolve-DnsName"));
 }
 
@@ -366,7 +435,12 @@ fn dynamic_head_n_translation() {
 #[test]
 fn dynamic_tail_n_translation() {
     let s = ps7(Dialect::PowerShell);
-    let r = tr("tail -n 10 file.txt", Dialect::Unix, Dialect::PowerShell, &s);
+    let r = tr(
+        "tail -n 10 file.txt",
+        Dialect::Unix,
+        Dialect::PowerShell,
+        &s,
+    );
     // tail with -n should use Select-Object -Last
     assert!(!r.is_empty());
 }
@@ -467,7 +541,12 @@ fn force_args_without_args_keeps_original() {
     let s = ps7(Dialect::PowerShell);
     // rm has force_args=true; without args and with unknown flags, it should
     // fall back to the original command
-    let r = tr("rm --some-unknown-flag", Dialect::Unix, Dialect::PowerShell, &s);
+    let r = tr(
+        "rm --some-unknown-flag",
+        Dialect::Unix,
+        Dialect::PowerShell,
+        &s,
+    );
     // Should contain either the translation or the original
     assert!(!r.is_empty());
 }
@@ -499,7 +578,12 @@ fn unix_target_preserves_connectors() {
 fn many_flags() {
     let s = ps7(Dialect::PowerShell);
     // Multiple flags on the same command
-    let r = tr("rm -r -f dir1 dir2 dir3", Dialect::Unix, Dialect::PowerShell, &s);
+    let r = tr(
+        "rm -r -f dir1 dir2 dir3",
+        Dialect::Unix,
+        Dialect::PowerShell,
+        &s,
+    );
     assert!(r.contains("Remove-Item"));
     assert!(r.contains("Recurse") || r.contains("Force"));
 }
@@ -507,7 +591,12 @@ fn many_flags() {
 #[test]
 fn mixed_known_and_unknown_flags() {
     let s = ps7(Dialect::PowerShell);
-    let r = tr("rm -rf --custom dir", Dialect::Unix, Dialect::PowerShell, &s);
+    let r = tr(
+        "rm -rf --custom dir",
+        Dialect::Unix,
+        Dialect::PowerShell,
+        &s,
+    );
     assert!(r.contains("Remove-Item"));
     assert!(r.contains("Recurse"));
     assert!(r.contains("Force"));

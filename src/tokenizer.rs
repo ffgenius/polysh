@@ -12,7 +12,7 @@
 pub struct Token {
     pub value: String,
     pub start: usize,
-    pub end: usize, // exclusive
+    pub end: usize,               // exclusive
     pub quote_type: Option<char>, // ' or " if quoted, None otherwise
 }
 
@@ -136,19 +136,13 @@ pub fn tokenize_with_pos(cmd: &str) -> Vec<Token> {
             }
         }
         // Backslash-escaped operator: \&&, \|| etc.
-        else if chars[i] == '\\'
-            && i + 1 < len
-            && is_operator_start(chars[i + 1])
-        {
+        else if chars[i] == '\\' && i + 1 < len && is_operator_start(chars[i + 1]) {
             value.push(chars[i]);
             value.push(chars[i + 1]);
             i += 2;
         }
         // PowerShell backtick-escaped: `&`&  or  `|`|
-        else if chars[i] == '`'
-            && i + 1 < len
-            && is_operator_start(chars[i + 1])
-        {
+        else if chars[i] == '`' && i + 1 < len && is_operator_start(chars[i + 1]) {
             if chars[i + 1] == '&'
                 && i + 2 < len
                 && chars[i + 2] == '`'
@@ -189,10 +183,7 @@ pub fn tokenize_with_pos(cmd: &str) -> Vec<Token> {
         }
         // Regular tokens: non-whitespace, non-operator characters
         else {
-            while i < len
-                && !chars[i].is_ascii_whitespace()
-                && !is_operator_start(chars[i])
-            {
+            while i < len && !chars[i].is_ascii_whitespace() && !is_operator_start(chars[i]) {
                 value.push(chars[i]);
                 i += 1;
             }
@@ -352,10 +343,7 @@ fn reconstruct_process_substitution(tokens: Vec<EnhancedToken>) -> Vec<EnhancedT
     let mut i = 0;
 
     while i < tokens.len() {
-        if tokens[i].value == "<"
-            && i + 1 < tokens.len()
-            && tokens[i + 1].value == "("
-        {
+        if tokens[i].value == "<" && i + 1 < tokens.len() && tokens[i + 1].value == "(" {
             let mut paren_depth = 1i32;
             let mut j = i + 2;
             while j < tokens.len() && paren_depth > 0 {
@@ -412,8 +400,7 @@ fn reconstruct_function_defs(tokens: Vec<EnhancedToken>) -> Vec<EnhancedToken> {
                 value: "()".to_string(),
                 start: tokens[i].start,
                 end: tokens[i + 1].end,
-                original_text: tokens[i].original_text.clone()
-                    + &tokens[i + 1].original_text,
+                original_text: tokens[i].original_text.clone() + &tokens[i + 1].original_text,
                 reconstructed_value: "()".to_string(),
                 needs_reconstruction: false,
                 quote_type: None,
@@ -435,8 +422,7 @@ fn reconstruct_env_vars(tokens: Vec<EnhancedToken>) -> Vec<EnhancedToken> {
     let mut i = 0;
 
     while i < tokens.len() {
-        if tokens[i].value == "$" && i + 1 < tokens.len() && tokens[i + 1].value.starts_with('{')
-        {
+        if tokens[i].value == "$" && i + 1 < tokens.len() && tokens[i + 1].value.starts_with('{') {
             let mut brace_depth = 1i32;
             let mut j = i + 1;
             // Count braces in the token that starts with '{'
@@ -507,8 +493,7 @@ fn reconstruct_redirections(tokens: Vec<EnhancedToken>) -> Vec<EnhancedToken> {
                 value: combined_val.clone(),
                 start: tokens[i].start,
                 end: tokens[i + 1].end,
-                original_text: tokens[i].original_text.clone()
-                    + &tokens[i + 1].original_text,
+                original_text: tokens[i].original_text.clone() + &tokens[i + 1].original_text,
                 reconstructed_value: combined_val,
                 needs_reconstruction: false,
                 quote_type: None,
@@ -542,8 +527,7 @@ fn reconstruct_escaped_operators(tokens: Vec<EnhancedToken>) -> Vec<EnhancedToke
                 value: combined.clone(),
                 start: tokens[i].start,
                 end: tokens[i + 1].end,
-                original_text: tokens[i].original_text.clone()
-                    + &tokens[i + 1].original_text,
+                original_text: tokens[i].original_text.clone() + &tokens[i + 1].original_text,
                 reconstructed_value: combined,
                 needs_reconstruction: false,
                 quote_type: None,
@@ -651,10 +635,7 @@ pub fn tag_token_roles(tokens: &[Token]) -> Vec<RoleToken> {
             continue;
         }
 
-        if t.value.starts_with('-')
-            && t.value.len() > 1
-            && t.quote_type.is_none()
-        {
+        if t.value.starts_with('-') && t.value.len() > 1 && t.quote_type.is_none() {
             out.push(RoleToken {
                 value: enhanced.value,
                 start: enhanced.start,
@@ -705,10 +686,7 @@ fn assign_roles_from_enhanced(tokens: &[EnhancedToken]) -> Vec<RoleToken> {
         } else if expect_cmd {
             role = TokenRole::Cmd;
             expect_cmd = false;
-        } else if value.starts_with('-')
-            && value.len() > 1
-            && t.quote_type.is_none()
-        {
+        } else if value.starts_with('-') && value.len() > 1 && t.quote_type.is_none() {
             role = TokenRole::Flag;
         } else {
             role = TokenRole::Arg;
