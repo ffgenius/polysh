@@ -13,11 +13,11 @@ fn test_detect_shell_does_not_panic() {
 
 #[test]
 fn test_dialect_from_str_aliases() {
-    // Verify Dialect::from_str works for all known aliases
-    assert_eq!(Dialect::from_str("powershell"), Some(Dialect::PowerShell));
-    assert_eq!(Dialect::from_str("ps"), Some(Dialect::PowerShell));
-    assert_eq!(Dialect::from_str("bash"), Some(Dialect::Unix));
-    assert_eq!(Dialect::from_str("zsh"), Some(Dialect::Unix));
-    assert_eq!(Dialect::from_str("cmd"), Some(Dialect::Cmd));
-    assert_eq!(Dialect::from_str("unknown"), None);
+    // Verify Dialect::parse works for all known aliases
+    assert_eq!(Dialect::parse("powershell"), Some(Dialect::PowerShell));
+    assert_eq!(Dialect::parse("ps"), Some(Dialect::PowerShell));
+    assert_eq!(Dialect::parse("bash"), Some(Dialect::Unix));
+    assert_eq!(Dialect::parse("zsh"), Some(Dialect::Unix));
+    assert_eq!(Dialect::parse("cmd"), Some(Dialect::Cmd));
+    assert_eq!(Dialect::parse("unknown"), None);
 }

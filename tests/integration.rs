@@ -584,21 +584,16 @@ fn dialect_from_str_all() {
     for a in &[
         "unix", "bash", "sh", "ash", "dash", "zsh", "fish", "ksh", "tcsh",
     ] {
-        assert_eq!(Dialect::from_str(a), Some(Dialect::Unix), "alias: {}", a);
+        assert_eq!(Dialect::parse(a), Some(Dialect::Unix), "alias: {}", a);
     }
     for a in &["powershell", "ps", "pwsh"] {
-        assert_eq!(
-            Dialect::from_str(a),
-            Some(Dialect::PowerShell),
-            "alias: {}",
-            a
-        );
+        assert_eq!(Dialect::parse(a), Some(Dialect::PowerShell), "alias: {}", a);
     }
     for a in &["cmd", "dos", "batch"] {
-        assert_eq!(Dialect::from_str(a), Some(Dialect::Cmd), "alias: {}", a);
+        assert_eq!(Dialect::parse(a), Some(Dialect::Cmd), "alias: {}", a);
     }
     for a in &["", "unknown", "python"] {
-        assert_eq!(Dialect::from_str(a), None, "alias: {}", a);
+        assert_eq!(Dialect::parse(a), None, "alias: {}", a);
     }
 }
 

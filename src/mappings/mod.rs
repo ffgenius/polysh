@@ -26,7 +26,7 @@ impl Dialect {
     pub const ALL: &'static [Dialect] = &[Dialect::Unix, Dialect::PowerShell, Dialect::Cmd];
 
     /// Try to parse a user-provided dialect name.
-    pub fn from_str(s: &str) -> Option<Self> {
+    pub fn parse(s: &str) -> Option<Self> {
         match s.to_lowercase().as_str() {
             "unix" | "bash" | "sh" | "ash" | "dash" | "zsh" | "fish" | "ksh" | "tcsh" => {
                 Some(Dialect::Unix)

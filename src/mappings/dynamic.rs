@@ -290,10 +290,8 @@ fn translate_find_unix_to_ps(flags: &[String], args: &[String]) -> String {
     let mut want_delete = false;
 
     for arg in args {
-        if !arg.starts_with('-') {
-            if path == "." {
-                path = arg.clone();
-            }
+        if !arg.starts_with('-') && path == "." {
+            path = arg.clone();
         }
     }
 

@@ -301,10 +301,9 @@ fn reclassify_cmd_flags(tokens: &[RoleToken], flags: &[String]) -> Vec<String> {
             && t.reconstructed_value[1..]
                 .chars()
                 .all(|c| c.is_ascii_alphabetic())
+            && !result.contains(&t.reconstructed_value)
         {
-            if !result.contains(&t.reconstructed_value) {
-                result.push(t.reconstructed_value.clone());
-            }
+            result.push(t.reconstructed_value.clone());
         }
     }
     result

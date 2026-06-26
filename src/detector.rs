@@ -43,6 +43,7 @@ pub fn detect_shell() -> ShellInfo {
     }
 }
 
+#[cfg(target_os = "windows")]
 fn shell_info_for(dialect: Dialect) -> ShellInfo {
     match dialect {
         Dialect::PowerShell => ShellInfo {

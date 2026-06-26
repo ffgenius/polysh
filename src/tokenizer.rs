@@ -265,8 +265,8 @@ fn reconstruct_command_substitution(tokens: Vec<EnhancedToken>) -> Vec<EnhancedT
                 let end = tokens[j - 1].end;
                 let original_text = cmd_from_range(&tokens, i, j);
                 let mut reconstructed = String::from("$(");
-                for k in i + 2..j - 1 {
-                    reconstructed.push_str(&tokens[k].value);
+                for t in &tokens[i + 2..j - 1] {
+                    reconstructed.push_str(&t.value);
                     reconstructed.push(' ');
                 }
                 reconstructed = reconstructed.trim().to_string();
@@ -360,8 +360,8 @@ fn reconstruct_process_substitution(tokens: Vec<EnhancedToken>) -> Vec<EnhancedT
                 let end = tokens[j - 1].end;
                 let original_text = cmd_from_range(&tokens, i, j);
                 let mut reconstructed = String::from("<(");
-                for k in i + 2..j - 1 {
-                    reconstructed.push_str(&tokens[k].value);
+                for t in &tokens[i + 2..j - 1] {
+                    reconstructed.push_str(&t.value);
                     reconstructed.push(' ');
                 }
                 reconstructed.push(')');
@@ -450,8 +450,8 @@ fn reconstruct_env_vars(tokens: Vec<EnhancedToken>) -> Vec<EnhancedToken> {
             let end = tokens[j].end;
             let original_text = cmd_from_range(&tokens, i, j + 1);
             let mut reconstructed = String::from("${");
-            for k in i + 2..j {
-                reconstructed.push_str(&tokens[k].value);
+            for t in &tokens[i + 2..j] {
+                reconstructed.push_str(&t.value);
                 reconstructed.push(' ');
             }
             reconstructed = reconstructed.trim().to_string();
@@ -499,9 +499,6 @@ fn reconstruct_redirections(tokens: Vec<EnhancedToken>) -> Vec<EnhancedToken> {
                 quote_type: None,
             });
             i += 2;
-        } else if is_redirection_token(&tokens[i].value) {
-            result.push(tokens[i].clone());
-            i += 1;
         } else {
             result.push(tokens[i].clone());
             i += 1;
