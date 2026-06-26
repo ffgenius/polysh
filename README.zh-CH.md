@@ -4,6 +4,7 @@
 
 [![Crates.io](https://img.shields.io/crates/v/polysh)](https://crates.io/crates/polysh)
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
+[English](README.md) | [中文](README.zh-CH.md)
 
 **polysh** 是一个纯 Rust 编写的 Shell 命令翻译库。将一条 Shell 命令在三种方言之间互译：
 

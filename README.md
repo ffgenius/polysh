@@ -4,6 +4,7 @@
 
 [![Crates.io](https://img.shields.io/crates/v/polysh)](https://crates.io/crates/polysh)
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
+[English](README.md) | [中文](README.zh-CH.md)
 
 **polysh** is a pure-Rust shell command translation library. It translates commands between three shell dialects:
 
