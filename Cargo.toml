@@ -1,0 +1,20 @@
+[package]
+name = "polysh"
+version = "0.0.1"
+edition = "2021"
+description = "Bidirectional shell command translator — Unix ↔ PowerShell ↔ CMD"
+license = "MIT"
+repository = "https://github.com/user/polysh"
+keywords = ["shell", "cross-platform", "command-translator", "powershell"]
+
+[lib]
+name = "polysh"
+path = "src/lib.rs"
+
+[dependencies]
+
+[dev-dependencies]
+
+[profile.release]
+opt-level = 3
+lto = true
