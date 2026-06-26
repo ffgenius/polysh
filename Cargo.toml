@@ -4,8 +4,9 @@ version = "0.0.1"
 edition = "2021"
 description = "Bidirectional shell command translator — Unix ↔ PowerShell ↔ CMD"
 license = "MIT"
-repository = "https://github.com/user/polysh"
+repository = "https://github.com/ffgenius/polysh"
 keywords = ["shell", "cross-platform", "command-translator", "powershell"]
+categories = ["command-line-interface", "development-tools"]
 
 [lib]
 name = "polysh"
