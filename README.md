@@ -194,14 +194,6 @@ All 6 directions have static mappings (command name + flags). Complex commands g
 | `ln -s` / `mklink` | Auto-reverses argument order |
 | `sudo` / `runas` | Privilege elevation conversion |
 
-## Environment Variables
-
-| Variable | Effect |
-|----------|--------|
-| `POLYSH_SHELL` | Override current shell type: `unix` / `powershell` / `ps` / `cmd` |
-
-If not set, auto-detection is used.
-
 ## Module Structure
 
 ```

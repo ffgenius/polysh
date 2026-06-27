@@ -194,14 +194,6 @@ polysh::mappings::MappingRegistry::translate_flag(from, cmd, flag, to) -> Option
 | `ln -s` / `mklink` | 参数顺序自动反转 |
 | `sudo` / `runas` | 权限提升转换 |
 
-## 环境变量
-
-| 变量 | 作用 |
-|------|------|
-| `POLYSH_SHELL` | 强制指定当前 Shell 类型：`unix` / `powershell` / `ps` / `cmd` |
-
-不设置则自动检测。
-
 ## 模块结构
 
 ```
