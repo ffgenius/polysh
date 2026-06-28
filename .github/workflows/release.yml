@@ -1,7 +1,9 @@
-# Release workflow — publish to crates.io and create GitHub Release.
+# Release workflow.
 #
-# Trigger: push a tag matching `v*` (tag is auto-created by CI on
-# `release: v*.*.*` commit messages).
+# Trigger:  push a tag matching `v*` (e.g. `v0.0.1`).
+#
+# Local prep:  run `bash scripts/release.sh` to bump the version in
+#   Cargo.toml, then commit + tag.
 #
 # Required secrets:
 #   - CARGO_REGISTRY_TOKEN — crates.io API token with publish permission
